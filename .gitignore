@@ -1,0 +1,6 @@
+**/configs/firebase-config.js
+.git
+
+package-lock.json
+config/firebase-key.json
+node_modules
