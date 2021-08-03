@@ -5,15 +5,21 @@ class AuthenticationMiddleware {
 	async decodeToken(req, res, next) {
 		
 		try {
+			if (req.originalUrl === '/registration') {
+				return next()
+			}
+
+			if (!req.headers.authorization) {
+				throw new Error()
+			}
 			const token = req.headers.authorization.split(' ')[1]
 			const decodedValue = await admin.auth().verifyIdToken(token)
-			console.log({decodedValue})
 			if (decodedValue) {
 				return next()
 			}
-			return res.json({message: 'UNAUTHENTICATED!'})
+			return res.status(401).json({message: 'UNAUTHENTICATED!'})
 		} catch (e) {
-			res.json(e.message | {message: 'UNAUTHENTICATED!'})
+			res.status(401).json(e.message | {message: 'UNAUTHENTICATED!'})
 		}
 	}
 

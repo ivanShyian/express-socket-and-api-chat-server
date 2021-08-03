@@ -4,13 +4,14 @@ const FirebaseUser = require('../models/FirebaseUser')
 
 const firebaseUser = new FirebaseUser()
 
-router.use((req, res, next) => {
-  next()
-})
-
 router.post('/', async(req, res) => {
-  const {email, password} = req.body
-  await firebaseUser.createUser({email, password})
+  try {
+    const {email, password, nickname, id} = req.body
+    const response = await firebaseUser.createUser({email, password, nickname, id})
+    res.status(200).json(response)
+  } catch (e) {
+    res.status(400).json ({state: false})
+  }
 })
 
 module.exports = router

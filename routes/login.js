@@ -5,7 +5,6 @@ const firebaseUser = new FirebaseUser()
 
 router.post('/', async(req, res) => {
   const user = await firebaseUser.loginUser({uid: req.body.uid})
-  console.log({user})
   res.json({status: user})
 })
 
