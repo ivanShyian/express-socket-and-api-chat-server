@@ -13,14 +13,14 @@ const chatsRoute = require('./routes/chats')
 
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
-app.use(cors({origin: ['http://localhost:8080', 'http://192.168.0.101:8080']}))
+app.use(cors({origin: ['http://localhost:8080', 'http://192.168.0.102:8080']}))
 
 app.use(authMiddleware.decodeToken)
 
 app.use('/login', loginRoute)
 app.use('/registration', registerRoute)
 app.use('/user', userRoute)
-app.use('/chats', chatsRoute)
+app.use('/messages', chatsRoute)
 // app.get('/user/get:userId?', getUserRoute)
 // app.get('/user/search', searchUserRoute)
 

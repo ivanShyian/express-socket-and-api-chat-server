@@ -6,7 +6,6 @@ const firebaseUser = new FirebaseUser()
 
 class FirebaseChats extends Firebase {
   myUserDatabaseID = null
-	userChatList = []
 	usersByChat = {}
   chatsCollection = {}
 
@@ -14,12 +13,33 @@ class FirebaseChats extends Firebase {
     this.myUserDatabaseID = data.databaseId
 
 		const chatIds = await this.__getFirebaseUserChatList(data.uid)
-    const result = await this.__getMessagesByValue(chatIds, 'lastMessage')
+    const result = await this.__getMessagesByValue('lastMessage', chatIds, null)
     return {lastMessages: result, chatsCollection: this.chatsCollection}
 	}
 
-	__getMessagesByValue = async(chats, value, exactChat) => {
-    if (chats && value) {
+	async getChatById(chatId) {
+    return this.__getMessagesByValue('messages', null, chatId)
+  }
+
+
+  async sendMessage(content, chatId) {
+    return this.__sendMessageToDatabase(content, chatId)
+  }
+
+  async __sendMessageToDatabase(content, chatId) {
+    try {
+      await admin.database().ref('messages').child(chatId).child('messages').push(content)
+      delete content.databaseID
+      await admin.database().ref('messages').child(chatId).child('lastMessage').set(content)
+      return {state: true}
+    } catch (e) {
+      console.error(e)
+      return {state: false}
+    }
+  }
+
+	__getMessagesByValue = async(value, chats, exactChat) => {
+    if (value && (chats || exactChat)) {
       switch (value) {
         case 'lastMessage':
           return await this.__fetchDataInLoopHelper({array: chats, callback: this.__fetchLastMessagesByChatId})
@@ -62,7 +82,7 @@ class FirebaseChats extends Firebase {
           resolve({...result.val(), chatUser: userData})
         }
         resolve({...result.val(), chatUser: 'self', databaseID: this.myUserDatabaseID})
-        
+
     }, (err) => {
       reject(err)
     })
@@ -78,7 +98,12 @@ class FirebaseChats extends Firebase {
     	.child(chat)
     	.child('messages')
     	.on('value', (result) => {
-    		resolve(result.val())
+        if (result.val() === null) {
+          resolve([])          
+        }
+        if (result.val()) {
+          resolve(result.val())
+        }
     	}, (err) => {
     		reject(err)
     	})

@@ -9,7 +9,6 @@ router.post('/me', async(req, res) => {
 		if (!uid) throw new Error('Internal Error')
 
 		const user = await firebaseUser.getUserData({uid})
-		console.log(user)
 		res.status(200).json(user)
 	} catch (e) {
 		res.status(400).json(e)

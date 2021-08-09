@@ -7,7 +7,7 @@ const port = process.env.PORT || 3001
 const io = require('socket.io')(server, {
   path: '/socket-service/',
   cors: {
-    origin: ['http://localhost:8080', 'http://192.168.0.101:8080'],
+    origin: ['http://localhost:8080', 'http://192.168.0.102:8080'],
     methods: ['POST', 'GET']
   }
 })
@@ -26,7 +26,7 @@ io.use((socket, next) => {
     }
   }
 
-  const username = socket.handshake.auth.username
+  const username = socket.handshake.auth.nickname
   const userDatabaseID = socket.handshake.auth.userDatabaseID
 
   if (!username) {
@@ -56,7 +56,7 @@ io.on('connection', async(socket) => {
   for await(const [id, socket] of io.of('/').sockets) {
     users.push({
       userID: socket.userID,
-      username: socket.username,
+      nickname: socket.username,
       userDatabaseID: socket.databaseID
     })
   }
@@ -64,7 +64,7 @@ io.on('connection', async(socket) => {
 
   socket.broadcast.emit('user connected', {
     userID: socket.userID,
-    username: socket.username,
+    nickname: socket.username,
     userDatabaseID: socket.databaseID
   })
 
