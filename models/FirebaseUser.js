@@ -1,12 +1,10 @@
 const Firebase = require('./Firebase')
 const admin = require('../config/firebase-admin')
 const randomId = require('../utils/randomIdGenerator')
+const UserSingleton = require('../utils/userSingleton')
+const userHelper = new UserSingleton()
 
 class FirebaseUser extends Firebase {
-  constructor() {
-    super()
-  }
-
   async createUser(data) {
     const firebaseAuthResponse = await this.__createNewFirebaseUser(data)
 
@@ -21,9 +19,49 @@ class FirebaseUser extends Firebase {
   }
 
   async getUserData(data) {
-    return this.__getUserDataFromDatabase(data.uid)
+    if (data.uid) {
+      const user = await this.__getUserDataFromDatabase(data.uid)   
+      if (data.me) {
+        super.firebaseUserData = user
+      } 
+      return user
+    }
+    if (data.query) {
+      return this.__getUserDataFromDatabaseByNickname(data.query)
+    }
   }
 
+
+  __getUserDataFromDatabaseByNickname = async(query) => {
+    try {
+      return new Promise(async(resolve, reject) => {
+        await admin.database()
+        .ref('users')
+        .on('value',
+          (users) => resolve(this.__returnMatchedUsers(users.val(), query)),
+          (err) => reject(err)
+        )
+      })
+    } catch (e) {
+      const error = e.message || e
+      console.error(error)
+      return error
+    }
+  }
+
+  __returnMatchedUsers = (userList, query) => {
+    if (userList && Object.keys(userList).length) {
+      const regQuery = new RegExp(`${query}`, 'i')
+
+      const existedChats = userHelper.chatsCollection && Object.keys(userHelper.chatsCollection)
+
+      return Object.keys(userList)
+        .map((user) => userList[user].userData)
+        .filter((data) => {
+          return regQuery.test(data.nickname) && data.uid !== super.firebaseUserData.uid && !existedChats.includes(data.id)
+         })
+    }
+  }
 
   __getUserDataFromDatabase = async(uid) => {
     try {
@@ -31,14 +69,14 @@ class FirebaseUser extends Firebase {
         await admin.database()
         .ref('users')
         .child(uid).child('userData')
-        .on('value', data => {
-          resolve(data.val())
-        }, (err) => {
-          reject(err)
-        })
+        .on('value',
+          (data) => resolve(data.val())),
+          (err) => reject(err)
       })
     } catch (e) {
-      console.error(e.message | e)
+      const error = e.message || e
+      console.error(error)
+      return error
     }
   }
 
@@ -56,8 +94,9 @@ class FirebaseUser extends Firebase {
       })
       return response
     } catch (e) {
-      console.error(e)
-      return e
+      const error = e.message || e
+      console.error(error)
+      return error
     }
   }
 
@@ -82,8 +121,9 @@ class FirebaseUser extends Firebase {
       return {state: true}
       return result
     } catch (e) {
-      console.error(e)
-      return {state: false, error: e.message || e}
+      const error = e.message || e
+      console.error(error)
+      return {state: false, error}
     }
   }
 }

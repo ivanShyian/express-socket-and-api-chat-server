@@ -42,8 +42,6 @@ io.use((socket, next) => {
 
 io.on('connection', async(socket) => {
   console.log(`<= User: ${socket.id} connected =>`)
-  console.log('dbID', socket.databaseID)
-
   socket.join(socket.userID)
 
   socket.emit('session', {

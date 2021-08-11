@@ -14,6 +14,8 @@ class FirebaseChats extends Firebase {
 
 		const chatIds = await this.__getFirebaseUserChatList(data.uid)
     const result = await this.__getMessagesByValue('lastMessage', chatIds, null)
+
+    super.firebaseUserChatList = this.chatsCollection
     return {lastMessages: result, chatsCollection: this.chatsCollection}
 	}
 
