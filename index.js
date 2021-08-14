@@ -21,7 +21,5 @@ app.use('/login', loginRoute)
 app.use('/registration', registerRoute)
 app.use('/user', userRoute)
 app.use('/messages', chatsRoute)
-// app.get('/user/get:userId?', getUserRoute)
-// app.get('/user/search', searchUserRoute)
 
 module.exports = server

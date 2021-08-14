@@ -1,10 +1,9 @@
 const Firebase = require('./Firebase')
 const admin = require('../config/firebase-admin')
 const randomId = require('../utils/randomIdGenerator')
-const UserSingleton = require('../utils/userSingleton')
-const userHelper = new UserSingleton()
 
 class FirebaseUser extends Firebase {
+
   async createUser(data) {
     const firebaseAuthResponse = await this.__createNewFirebaseUser(data)
 
@@ -20,25 +19,23 @@ class FirebaseUser extends Firebase {
 
   async getUserData(data) {
     if (data.uid) {
-      const user = await this.__getUserDataFromDatabase(data.uid)   
-      if (data.me) {
-        super.firebaseUserData = user
-      } 
-      return user
+      return this.__getUserDataFromDatabase(data.uid)  
     }
-    if (data.query) {
-      return this.__getUserDataFromDatabaseByNickname(data.query)
+    if (data.query && data.id) {
+      return this.__getAllUsersFromDatabaseOptionaly({withQuery: true, query: data.query, myUserUid: data.id})
     }
   }
 
+  async getAllUsers(me) {
+    return this.__getAllUsersFromDatabaseOptionaly({withQuery: false, myUser: me})
+  }
 
-  __getUserDataFromDatabaseByNickname = async(query) => {
+
+  __getAllUsersFromDatabaseOptionaly = async({withQuery, myUser, query = ''}) => {
     try {
       return new Promise(async(resolve, reject) => {
-        await admin.database()
-        .ref('users')
-        .on('value',
-          (users) => resolve(this.__returnMatchedUsers(users.val(), query)),
+        await admin.database().ref('users').on('value',
+          (users) => resolve(this.__returnMatchedUsers(!!withQuery, users.val(), query, myUser)),
           (err) => reject(err)
         )
       })
@@ -49,18 +46,44 @@ class FirebaseUser extends Firebase {
     }
   }
 
-  __returnMatchedUsers = (userList, query) => {
+  __returnMatchedUsers = async(byQuery, userList, query, myUser) => {
     if (userList && Object.keys(userList).length) {
-      const regQuery = new RegExp(`${query}`, 'i')
+      const collection = await this.__extractUserChatsCollection(myUser)
+      const existedChats = collection && collection.map(item => Object.values(item)).flat(1)
 
-      const existedChats = userHelper.chatsCollection && Object.keys(userHelper.chatsCollection)
-
-      return Object.keys(userList)
-        .map((user) => userList[user].userData)
-        .filter((data) => {
-          return regQuery.test(data.nickname) && data.uid !== super.firebaseUserData.uid && !existedChats.includes(data.id)
-         })
+      if (byQuery) {
+        const regQuery = new RegExp(`${query}`, 'i')
+        return this.__diveIntoObjectAndExtractArray(userList, 'userData')
+          .filter((data) => {
+            return regQuery.test(data.nickname) && data.uid !== myUser.uid && !existedChats.includes(data.userDatabaseID)
+          })
+      } else {
+        return this.__diveIntoObjectAndExtractArray(userList, 'userData')
+          .filter((data) => {
+            return data.uid !== myUser.uid && !existedChats.includes(data.userDatabaseID)
+          })
+      }
     }
+  }
+
+  __extractUserChatsCollection = async(myUser) => {
+    return Firebase.getUserChatCollection(myUser)
+  }
+
+  __diveIntoObjectAndExtractArray = (objectData, deeperProp) => {
+     return Object.keys(objectData).map((data) => {
+       if ([deeperProp] in objectData[data]) {
+         let userData = objectData[data][deeperProp]
+         userData = {
+           ...userData,
+           userDatabaseID: userData.id,
+           unfam: true
+         }
+         delete userData.id
+         delete userData.email
+         return userData
+       }
+     })
   }
 
   __getUserDataFromDatabase = async(uid) => {

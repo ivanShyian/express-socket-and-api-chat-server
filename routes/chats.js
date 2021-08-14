@@ -36,4 +36,17 @@ router.post('/send', async(req, res) => {
 	}
 })
 
+router.post('/add-chat', async(req, res) => {
+	try {
+		const {myUserId, userId} = req.body
+		const chatId = await firebaseChats.addChatToUserList({myUserId, userId})
+		res.status(200).json({
+			state: true,
+			id: chatId
+		})
+	} catch (e) {
+		res.status(400).json(e)
+	}
+})
+
 module.exports = router

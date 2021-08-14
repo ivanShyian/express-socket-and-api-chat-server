@@ -1,6 +1,7 @@
 **/configs/firebase-config.js
 .git
 
+.idea
 package-lock.json
 config/firebase-key.json
 node_modules
